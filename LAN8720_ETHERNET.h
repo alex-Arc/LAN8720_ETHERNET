@@ -1,4 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////////
+// LAN8720_ETHERNET
+//
 // MIT License
 //
 // Copyright (c) 2016 Alex Christoffer Rasmussen
@@ -23,10 +25,18 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 
-#ifndef _LAN8720_ETHERNET_
-#define _LAN8720_ETHERNET_
+#ifndef __LAN8720_ETHERNET_h__
+#define __LAN8720_ETHERNET_h__
 
+#include "IPAddress.h"
 
+class LAN8720_Ethernet {
+private:
+
+public:
+  LAN8720_Ethernet();
+  void begin();
+}
 
 
 
