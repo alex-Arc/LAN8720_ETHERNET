@@ -30,15 +30,93 @@
 
 #include "IPAddress.h"
 
-class LAN8720_Ethernet {
+#define RXSIZE 12
+#define TXSIZE 10
+
+typedef struct {
+	uint16_t length;
+  union {
+    uint16_t all;
+    struct {
+      uint16_t TR   : 1;  //frame must be discarded. Set if the receive frame is truncated (frame length >TRUNC_FL).
+      uint16_t OV   : 1;  //This field is valid only if the L field is set. A receive FIFO overrun occurred
+      uint16_t CR   : 1;  //This field is valid only if the L field is set. Receive CRC or frame error.
+      uint16_t Reserved0 : 1;  //Reserved
+      uint16_t NO   : 1;  //This field is valid only if the L field is set. Receive non-octet aligned frame
+      uint16_t LG   : 1;  //This field is valid only if the L field is set. A frame length greater than RCR[MAX_FL] was recognized.
+      uint16_t MC   : 1;  //Set if is multicast and not BC.
+      uint16_t BC   : 1;  //Set if is broadcast (FFFF_FFFF_FFFF).
+      uint16_t M    : 1;  //This field is valid only if the L and PROM bits are set. 0 The frame was received because of an address recognition hit. 1 The frame was received because of promiscuous mode.
+      uint16_t Reserved1 : 2;  //Reserved
+      uint16_t L    : 1;  //last frame
+      uint16_t RO2  : 1;
+      uint16_t W    : 1;  //Warp
+      uint16_t RO1  : 1;  //Receive software ownership. This field is reserved for use by software. This read/write field is not modified by hardware, nor does its value affect hardware.
+      uint16_t E    : 1;  //0 data in buffer. 1 buffer empty.
+    };
+  }flags;
+	void *buffer;
+  union {
+    uint32_t all;
+    struct {
+      uint8_t Reserved0  : 7;
+      uint8_t INT   : 1;
+      uint8_t UC    : 1;        //unicast frame
+      uint8_t CE    : 1;        //Collision error The frame is invalid. Only valid if the L field is set.
+      uint8_t PE    : 1;        //PHY error The frame is invalid. Only valid if the L field is set.
+      uint8_t Reserved1  : 4;
+      uint8_t ME    : 1;        //Erroe in memory or receive FIFO overflow. Only valid if the L field is set.
+      uint8_t FRAG  : 1;        //This is a IPv4 fragment frame. Only valid if the L field is set.
+      uint8_t IPV6  : 1;        //IPV6 tag. Only valid if the L field is set.
+      uint8_t VLAN  : 1;        //VLAN tag. Only valid if the L field is set.
+      uint8_t Reserved2  : 1;
+      uint8_t PCR  : 1;         //Protocol checksum error. Only valid if the L field is set.
+      uint8_t ICE  : 1;         //IP header checksum error. Only valid if the L field is set.
+      uint8_t Reserved3  : 2;
+      uint8_t Reserved4  : 5;
+      uint8_t VPCP : 3;         //VLAN priority code 0-7
+    };
+  }moreflags;
+	uint16_t checksum;
+	uint8_t header;
+  uint8_t protocolType :7;
+	uint32_t dmadone;
+	uint32_t timestamp;
+	uint32_t unused1;
+	uint32_t unused2;
+} enetbufferdesc_t;
+
+typedef struct LAN8720Config_s {
+  uint8_t ip[4];
+  uint8_t subnetMask[4];
+  uint8_t netPrefix[4];
+  uint8_t gateway[4];
+  uint8_t dns[4];
+  enetbufferdesc_t rx_ring[RXSIZE] __attribute__ ((aligned(16)));
+  enetbufferdesc_t tx_ring[TXSIZE] __attribute__ ((aligned(16)));
+  uint32_t rxbufs[RXSIZE*128] __attribute__ ((aligned(16)));
+  uint32_t txbufs[TXSIZE*128] __attribute__ ((aligned(16)));
+} LAN8720Config_t;
+
+class LAN8720Class {
 private:
+  static LAN8720Config_t config;
 
 public:
-  LAN8720_Ethernet();
-  void begin();
-}
+  // LAN8720Class();
+  //static int begin(uint8_t *mac, unsigned long timeout = 60000, unsigned long responseTimeout = 4000);
+  //static void begin(uint8_t *mac, IPAddress ip);
+  //static void begin(uint8_t *mac, IPAddress ip, IPAddress dns);
+  //static void begin(uint8_t *mac, IPAddress ip, IPAddress dns, IPAddress gateway);
+  static void begin(uint8_t *mac, IPAddress ip, IPAddress dns, IPAddress gateway, IPAddress subnet);
 
+  // static IPAddress localIP();
+  // static IPAddress subnetMask();
+  // static IPAddress gatewayIP();
+//  static IPAddress dnsServerIP() { return _dnsServerAddress; }
 
+};
 
+extern LAN8720Class Ethernet;
 
 #endif
