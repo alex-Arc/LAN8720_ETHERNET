@@ -92,6 +92,8 @@ typedef struct LAN8720Config_s {
   uint8_t netPrefix[4];
   uint8_t gateway[4];
   uint8_t dns[4];
+  uint32_t mac_h;
+  uint32_t mac_l;
   enetbufferdesc_t rx_ring[RXSIZE] __attribute__ ((aligned(16)));
   enetbufferdesc_t tx_ring[TXSIZE] __attribute__ ((aligned(16)));
   uint32_t rxbufs[RXSIZE*128] __attribute__ ((aligned(16)));
@@ -101,7 +103,7 @@ typedef struct LAN8720Config_s {
 class LAN8720Class {
 private:
   static LAN8720Config_t config;
-
+  void init(void);
 public:
   // LAN8720Class();
   //static int begin(uint8_t *mac, unsigned long timeout = 60000, unsigned long responseTimeout = 4000);
@@ -110,9 +112,9 @@ public:
   //static void begin(uint8_t *mac, IPAddress ip, IPAddress dns, IPAddress gateway);
   static void begin(uint8_t *mac, IPAddress ip, IPAddress dns, IPAddress gateway, IPAddress subnet);
 
-  // static IPAddress localIP();
-  // static IPAddress subnetMask();
-  // static IPAddress gatewayIP();
+  static IPAddress localIP();
+  static IPAddress subnetMask();
+  static IPAddress gatewayIP();
 //  static IPAddress dnsServerIP() { return _dnsServerAddress; }
 
 };

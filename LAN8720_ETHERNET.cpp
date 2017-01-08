@@ -26,16 +26,7 @@
 #include "IPAddress.h"
 #include "core_pins.h"
 LAN8720Config_t LAN8720Class::config;
-
-void LAN8720Class::begin(uint8_t *mac, IPAddress ip, IPAddress dns, IPAddress gateway, IPAddress subnet) {
-  for(int i = 0; i < 4; i++) {
-    config.ip[i] = ip[i];
-    config.subnetMask[i] = subnet[i];
-  }
-
-  uint32_t mac_h = mac[0]<<2 | mac[1]<<1 | mac[2];
-  uint32_t mac_l = mac[3]<<2 | mac[4]<<1 | mac[5];
-
+void LAN8720Class::init() {
   MPU_RGDAAC0 |= 0x007C0000;
 	SIM_SCGC2 |= SIM_SCGC2_ENET;
 	CORE_PIN3_CONFIG =  PORT_PCR_MUX(4); // RXD1
@@ -83,8 +74,8 @@ void LAN8720Class::begin(uint8_t *mac, IPAddress ip, IPAddress dns, IPAddress ga
 		/* ENET_RCR_FCE | ENET_RCR_PROM | */ ENET_RCR_MII_MODE;
 	ENET_TCR = ENET_TCR_ADDINS | /* ENET_TCR_RFC_PAUSE | ENET_TCR_TFC_PAUSE | */
 		ENET_TCR_FDEN;
-	ENET_PALR = (mac_h << 8) | ((mac_l >> 16) & 255);
-	ENET_PAUR = ((mac_l << 16) & 0xFFFF0000) | 0x8808;
+	ENET_PALR = (config.mac_h << 8) | ((config.mac_l >> 16) & 255);
+	ENET_PAUR = ((config.mac_l << 16) & 0xFFFF0000) | 0x8808;
 	ENET_OPD = 0x10014;
 	ENET_IAUR = 0;
 	ENET_IALR = 0;
@@ -100,4 +91,26 @@ void LAN8720Class::begin(uint8_t *mac, IPAddress ip, IPAddress dns, IPAddress ga
 	ENET_ECR = 0xF0000000 | ENET_ECR_DBSWP | ENET_ECR_EN1588 | ENET_ECR_ETHEREN;
 	ENET_RDAR = ENET_RDAR_RDAR;
 	ENET_TDAR = ENET_TDAR_TDAR;
+}
+void LAN8720Class::begin(uint8_t *mac, IPAddress ip, IPAddress dns, IPAddress gateway, IPAddress subnet) {
+  for(int i = 0; i < 4; i++) {
+    config.ip[i] = ip[i];
+    config.subnetMask[i] = subnet[i];
+  }
+
+  config.mac_h = mac[0]<<2 | mac[1]<<1 | mac[2];
+  config.mac_l = mac[3]<<2 | mac[4]<<1 | mac[5];
+}
+
+
+IPAddress LAN8720Class::localIP() {
+  return IPAddress(config.ip);
+}
+
+IPAddress LAN8720Class::subnetMask() {
+  return IPAddress(config.subnetMask);
+}
+
+IPAddress LAN8720Class::gatewayIP() {
+  return IPAddress(config.gateway);
 }
