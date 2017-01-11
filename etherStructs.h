@@ -1,12 +1,29 @@
-#ifndef __ethernetHeaders_h__
-#define __ethernetHeaders_h__
+#ifndef __etherStructs_h__
+#define __etherStructs_h__
 
-typedef struct S_EthernetHeader {
+typedef struct ethernetHeader_s {
   uint16_t   pad;
   uint8_t   dstMAC[6];
   uint8_t   srcMAC[6];
   uint16_t  type;
-} T_EthernetHeader;
+} ethernetHeader_t;
+
+typedef struct dhcpHeader_s {
+  uint8_t   OP;
+  uint8_t   HTYPE;
+  uint8_t   HLEN;
+  uint8_t   HOPS;
+  uint16_t  XID;
+  uint8_t   SECS;
+  uint8_t   FLAGS;
+  uint16_t  CIADDR;
+  uint16_t  YIADDR;
+  uint16_t  SIADDR;
+  uint16_t  GIADDR;
+  //uint16_t  YIADDR;
+  uint8_t   CHADDR[6];
+  uint16_t  MagicCookie;
+} dhcpHeader_t;
 
 typedef struct S_IPv4Header {
   //T_EthernetHeader  ethernetHeader;
