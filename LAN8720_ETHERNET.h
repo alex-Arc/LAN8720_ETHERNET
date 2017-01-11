@@ -29,6 +29,7 @@
 #define __LAN8720_ETHERNET_h__
 
 #include "IPAddress.h"
+#include "etherStructs.h"
 
 #define RXSIZE 12
 #define TXSIZE 10
@@ -78,8 +79,8 @@ typedef struct {
     };
   }moreflags;
 	uint16_t checksum;
-	uint8_t header;
-  uint8_t protocolType :7;
+	uint8_t ipProtocol;
+  uint8_t etherType :4;
 	uint32_t dmadone;
 	uint32_t timestamp;
 	uint32_t unused1;
@@ -98,25 +99,32 @@ typedef struct LAN8720Config_s {
   enetbufferdesc_t tx_ring[TXSIZE] __attribute__ ((aligned(16)));
   uint32_t rxbufs[RXSIZE*128] __attribute__ ((aligned(16)));
   uint32_t txbufs[TXSIZE*128] __attribute__ ((aligned(16)));
+  int rxnum;
 } LAN8720Config_t;
 
 class LAN8720Class {
 private:
   static LAN8720Config_t config;
-  void init(void);
+  static void init(void);
 public:
   // LAN8720Class();
-  //static int begin(uint8_t *mac, unsigned long timeout = 60000, unsigned long responseTimeout = 4000);
+  static int begin(uint8_t *mac, unsigned long timeout = 60000, unsigned long responseTimeout = 4000);
   //static void begin(uint8_t *mac, IPAddress ip);
   //static void begin(uint8_t *mac, IPAddress ip, IPAddress dns);
   //static void begin(uint8_t *mac, IPAddress ip, IPAddress dns, IPAddress gateway);
   static void begin(uint8_t *mac, IPAddress ip, IPAddress dns, IPAddress gateway, IPAddress subnet);
+
+  int nextPacket(void);
+  
+  uint16_t getEtherType(void);
+  uint8_t  getIPv4Protocol(void);
 
   static IPAddress localIP();
   static IPAddress subnetMask();
   static IPAddress gatewayIP();
 //  static IPAddress dnsServerIP() { return _dnsServerAddress; }
 
+  //friend class DhcpClass;
 };
 
 extern LAN8720Class Ethernet;

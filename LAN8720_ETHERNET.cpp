@@ -24,9 +24,12 @@
 
 #include "LAN8720_ETHERNET.h"
 #include "IPAddress.h"
+#include "etherStructs.h"
 #include "core_pins.h"
+
 LAN8720Config_t LAN8720Class::config;
-void LAN8720Class::init() {
+
+void LAN8720Class::init(void) {
   MPU_RGDAAC0 |= 0x007C0000;
 	SIM_SCGC2 |= SIM_SCGC2_ENET;
 	CORE_PIN3_CONFIG =  PORT_PCR_MUX(4); // RXD1
@@ -92,6 +95,7 @@ void LAN8720Class::init() {
 	ENET_RDAR = ENET_RDAR_RDAR;
 	ENET_TDAR = ENET_TDAR_TDAR;
 }
+
 void LAN8720Class::begin(uint8_t *mac, IPAddress ip, IPAddress dns, IPAddress gateway, IPAddress subnet) {
   for(int i = 0; i < 4; i++) {
     config.ip[i] = ip[i];
@@ -100,6 +104,35 @@ void LAN8720Class::begin(uint8_t *mac, IPAddress ip, IPAddress dns, IPAddress ga
 
   config.mac_h = mac[0]<<2 | mac[1]<<1 | mac[2];
   config.mac_l = mac[3]<<2 | mac[4]<<1 | mac[5];
+
+  LAN8720Class::init();
+}
+
+int LAN8720Class::begin(uint8_t *mac, unsigned long timeout, unsigned long responseTimeout) {
+  config.mac_h = mac[0]<<2 | mac[1]<<1 | mac[2];
+  config.mac_l = mac[3]<<2 | mac[4]<<1 | mac[5];
+
+  LAN8720Class::init();
+
+  return -1;
+}
+
+int LAN8720Class::nextPacket(void) {
+  //TODO: we will always lose first packet, is that so bad?
+  volatile enetbufferdesc_t *buf;
+  if (config.rxnum < RXSIZE-1) {
+			buf->flags.all = 0x8000;
+			rxnum++;
+		} else {
+			buf->flags.all = 0xA000;
+			rxnum = 0;
+		}
+	}
+  buf = config.rx_ring + config.rxnum;
+  if ((buf->flags.all & 0xF73F) == 0) {
+    return buf->length;
+  }
+  return -1;
 }
 
 
