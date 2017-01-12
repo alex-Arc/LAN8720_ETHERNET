@@ -1,6 +1,11 @@
 #ifndef __etherStructs_h__
 #define __etherStructs_h__
 
+enum EtherType: uint16_t {
+  IPv4  = 0x0008,
+  ARP   = 0x0608
+};
+
 typedef struct ethernetHeader_s {
   uint16_t   pad;
   uint8_t   dstMAC[6];
@@ -25,7 +30,7 @@ typedef struct dhcpHeader_s {
   uint16_t  MagicCookie;
 } dhcpHeader_t;
 
-typedef struct S_IPv4Header {
+typedef struct IPv4Header_s {
   //T_EthernetHeader  ethernetHeader;
   struct {
     uint8_t     IHL       : 4;
@@ -44,7 +49,7 @@ typedef struct S_IPv4Header {
   uint8_t     srcIP[4];
   uint8_t     dstIP[4];
   uint32_t    options[4];
-} T_IPv4Header;
+} IPv4Header_t;
 
 typedef struct S_arp{
   uint16_t  HTYPE;    //Hardware type
