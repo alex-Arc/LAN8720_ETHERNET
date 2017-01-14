@@ -51,7 +51,7 @@ typedef struct IPv4Header_s {
   uint32_t    options[4];
 } IPv4Header_t;
 
-typedef struct S_arp{
+typedef struct arpHeader_s{
   uint16_t  HTYPE;    //Hardware type
   uint16_t  PTYPE;    //Protocol type
   uint8_t   HLEN;     //Hardware length. lenght hardware address is 6
@@ -61,7 +61,7 @@ typedef struct S_arp{
   uint8_t   SPA[4];   //Sender protocol address (IP)
   uint8_t   THA[6];    //Target hardware address (MAC)
   uint8_t   TPA[4];    //Target protocol address (IP)
-}T_arp;
+}arpHeader_t;
 
 typedef struct S_UDPHeader {
   uint16_t          srcPort;

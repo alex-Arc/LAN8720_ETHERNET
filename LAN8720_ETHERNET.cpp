@@ -28,6 +28,7 @@
 #include "core_pins.h"
 
 LAN8720Config_t LAN8720Class::config;
+size_t LAN8720Class::_len;
 
 void LAN8720Class::init(void) {
   MPU_RGDAAC0 |= 0x007C0000;
@@ -101,7 +102,7 @@ void LAN8720Class::begin(uint8_t *mac, IPAddress ip, IPAddress dns, IPAddress ga
     config.ip[i] = ip[i];
     config.subnetMask[i] = subnet[i];
   }
-
+  memcpy(config.mac, mac, 6);
   config.mac_h = mac[0]<<2 | mac[1]<<1 | mac[2];
   config.mac_l = mac[3]<<2 | mac[4]<<1 | mac[5];
 
@@ -120,21 +121,112 @@ int LAN8720Class::begin(uint8_t *mac, unsigned long timeout, unsigned long respo
 int LAN8720Class::nextPacket(void) {
   //TODO: we will always lose first packet, is that so bad?
   volatile enetbufferdesc_t *buf;
-  if (config.rxnum < RXSIZE-1) {
-			buf->flags.all = 0x8000;
-			rxnum++;
-		} else {
-			buf->flags.all = 0xA000;
-			rxnum = 0;
-		}
-	}
   buf = config.rx_ring + config.rxnum;
+  if (config.rxnum < RXSIZE-1) {
+		buf->flags.all = 0x8000;
+		config.rxnum++;
+	} else {
+		buf->flags.all = 0xA000;
+		config.rxnum = 0;
+	}
+
+  buf = config.rx_ring + config.rxnum;
+
   if ((buf->flags.all & 0xF73F) == 0) {
-    return buf->length;
+    if (buf->etherType == EtherType::IPv4) {
+      return getIPv4Protocol();
+    }else {
+      if (getEtherType() == EtherType::ARP) {
+        ARPresponse();
+        return nextPacket();
+      }else {
+        return 0;
+      }
+    }
   }
   return -1;
 }
 
+uint16_t LAN8720Class::getEtherType(void) {
+  volatile enetbufferdesc_t *buf;
+  buf = config.rx_ring + config.rxnum;
+
+  ethernetHeader_t *header = (ethernetHeader_t *)buf->buffer;
+  return header->type;
+}
+
+int LAN8720Class::ARPresponse(void) {
+  volatile enetbufferdesc_t *buf;
+  buf = config.rx_ring + config.rxnum;
+
+  arpHeader_t *header = (arpHeader_t *)buf->buffer+sizeof(ethernetHeader_t);
+  if (header->HTYPE == 0x100 && header->PTYPE == EtherType::IPv4 && header->OPER == 0x0100) {
+    if (memcmp(header->TPA, config.ip, 4) == 0) {
+      beginPacket(header->THA, EtherType::ARP);
+      arpHeader_t *ptr = (arpHeader_t*) calloc(1, sizeof(arpHeader_t));
+      ptr->HTYPE = 0x0100;     //ethernet
+      ptr->PTYPE = EtherType::IPv4;
+      ptr->HLEN = 6;
+      ptr->PLEN = 4;
+      ptr->OPER = 0x0200;  //1 for request, 2 for reply.
+      memcpy(ptr->SHA, config.mac, 6);
+      memcpy(ptr->SPA, config.ip, 4);
+      memcpy(ptr->THA, header->SHA, 6);
+      memcpy(ptr->TPA, header->TPA, 4);
+      writePacket(ptr, sizeof(arpHeader_t));
+      endPacket();
+    }
+    return 0;
+  }
+  return -1;
+}
+
+uint8_t LAN8720Class::getIPv4Protocol(void) {
+  volatile enetbufferdesc_t *buf;
+  buf = config.rx_ring + config.rxnum;
+
+  IPv4Header_t *header = (IPv4Header_t *)buf->buffer+sizeof(ethernetHeader_t);
+  return header->protocol;
+}
+
+int LAN8720Class::beginPacket(uint8_t* dstMAC, uint16_t etherType) {
+	if (config.txnum < TXSIZE-1) {
+		config.txnum++;
+	} else {
+		config.txnum = 0;
+	}
+
+  enetbufferdesc_t *_txbuf = config.tx_ring + config.txnum;
+  _len = 0;
+
+  if ((_txbuf->flags.all & 0x8000) == 0) {
+    ethernetHeader_t *prt = (ethernetHeader_t*) calloc(1, sizeof(ethernetHeader_t));
+    prt->type = etherType;
+    memcpy(prt->dstMAC, dstMAC, 6);
+    writePacket(prt, sizeof(ethernetHeader_t));
+    return 1;
+  }
+  return -1;
+}
+
+size_t LAN8720Class::writePacket(uint8_t byte) {
+  uint8_t* buf = (uint8_t*)_txbuf->buffer+_len;
+  memcpy(buf, &byte, 1);
+  _len++;
+  return 1;
+}
+
+size_t LAN8720Class::writePacket(void *buffer, size_t len) {
+  uint8_t* buf = (uint8_t*)_txbuf->buffer+_len;
+  memcpy(buf, buffer, len);
+  _len += len;
+  return 1;
+}
+
+int LAN8720Class::endPacket(void) {
+  _txbuf->length = _len;
+  _txbuf->flags.all |= 0x8C00;
+}
 
 IPAddress LAN8720Class::localIP() {
   return IPAddress(config.ip);
@@ -146,4 +238,8 @@ IPAddress LAN8720Class::subnetMask() {
 
 IPAddress LAN8720Class::gatewayIP() {
   return IPAddress(config.gateway);
+}
+
+uint8_t* LAN8720Class::getMAC(void) {
+  return config.mac;
 }

@@ -95,17 +95,21 @@ typedef struct LAN8720Config_s {
   uint8_t dns[4];
   uint32_t mac_h;
   uint32_t mac_l;
+  uint8_t mac[6];
   enetbufferdesc_t rx_ring[RXSIZE] __attribute__ ((aligned(16)));
   enetbufferdesc_t tx_ring[TXSIZE] __attribute__ ((aligned(16)));
   uint32_t rxbufs[RXSIZE*128] __attribute__ ((aligned(16)));
   uint32_t txbufs[TXSIZE*128] __attribute__ ((aligned(16)));
   int rxnum;
+  int txnum;
 } LAN8720Config_t;
 
 class LAN8720Class {
 private:
   static LAN8720Config_t config;
   static void init(void);
+  static size_t _len;
+  static enetbufferdesc_t *_txbuf;
 public:
   // LAN8720Class();
   static int begin(uint8_t *mac, unsigned long timeout = 60000, unsigned long responseTimeout = 4000);
@@ -115,14 +119,20 @@ public:
   static void begin(uint8_t *mac, IPAddress ip, IPAddress dns, IPAddress gateway, IPAddress subnet);
 
   int nextPacket(void);
-  
+  int ARPresponse(void);
   uint16_t getEtherType(void);
   uint8_t  getIPv4Protocol(void);
+
+  int beginPacket(uint8_t* dstMAC, uint16_t etherType);
+  size_t writePacket(uint8_t byte);
+  size_t writePacket(void *buffer, size_t len);
+  int endPacket(void);
 
   static IPAddress localIP();
   static IPAddress subnetMask();
   static IPAddress gatewayIP();
 //  static IPAddress dnsServerIP() { return _dnsServerAddress; }
+  uint8_t* getMAC(void);
 
   //friend class DhcpClass;
 };
